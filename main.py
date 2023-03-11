@@ -3,13 +3,14 @@ import matplotlib
 import numpy as np
 from lcard.python import e502
 import time
+import math
 matplotlib.use('Qt5Agg')
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import  pyqtSignal as Signal, pyqtSlot as Slot
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
-
+from numpy import fft
 
 class MplCanvas(FigureCanvasQTAgg):
 
@@ -47,8 +48,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.fs=2e6
-        self.f=24695
-        self.t=0.1 
+        self.f=24693
+        self.t=0.05 
         self.dev=e502.E502()
         self.dev.connect_byUsb()
         self.dev.configure_channels(channels=[1], modes=['comm'],ranges=[10])
@@ -127,12 +128,20 @@ class MainWindow(QtWidgets.QMainWindow):
         N=len(data)
         x=data.reshape((N,))
         k=self.f*N/self.fs
+        #freq = np.fft.fftfreq(N, d=1/self.fs)
+        #ft=fft.rfft(x)
+        #k=np.argmax(np.abs(ft[:N//2]))
+        #k=self.f*N/self.fs
         w=np.array([np.exp(-2*np.pi*1j/N*k*n) for n in range(N)])
         Xk=2*np.dot(x,w)/N
+
+        #print (ft.shape)
+        #print(freq[k])
+        #Xk=2*ft[k]/N
         self.Xk.append(Xk)
         self.sc.axes.cla()
-        self.sc.axes.plot(np.real(self.Xk))
-        self.sc.axes.plot(np.imag(self.Xk))
+        self.sc.axes.plot(np.abs(self.Xk))
+        self.sc.axes.plot(np.angle(self.Xk))
         #self.sc.axes.plot(np.abs(self.Xk))
         #self.sc.axes.plot(np.angle(self.Xk))
         self.sc.draw()
