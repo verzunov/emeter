@@ -4,6 +4,7 @@ import numpy as np
 from lcard.python import e502
 import time
 import math
+import pylab
 matplotlib.use('Qt5Agg')
 
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -34,7 +35,7 @@ class Worker(QtCore.QObject):
             data, _=dev.get_data()
             self.progress.emit(data)
             time.sleep(1)
-
+            #break
     @Slot()
     def stop(self,param):
         self.work=False
@@ -47,17 +48,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.fs=2e6
-        self.f=24693
-        self.t=0.05 
+        self.fs=1e6
+        self.f=24696
+        self.t=0.01 
         self.dev=e502.E502()
         self.dev.connect_byUsb()
-        self.dev.configure_channels(channels=[1], modes=['comm'],ranges=[10])
+        self.dev.configure_channels(channels=[1, 2], modes=['comm','comm'],ranges=[2, 2])
         self.dev.set_adc_freq(self.fs)
-        self.dev.set_sync_start_mode("syn1_rise")
+        #self.dev.set_sync_start_mode("syn1_rise")
         self.dev.configure_device()
         self.dev.enable_streams()
         self.Xk=[]
+        self.fs=self.fs/2
 
         #self.sc.axes.plot([0,1,2,3,4], [10,1,20,3,40])
         layout = QtWidgets.QVBoxLayout()
@@ -123,10 +125,10 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.worker_thread.quit()
         #self.worker_thread.wait()
 
-
-    def updateProgress(self, data):
+    def detect(self, data):
         N=len(data)
-        x=data.reshape((N,))
+        x=data
+        #print (x)
         k=self.f*N/self.fs
         #freq = np.fft.fftfreq(N, d=1/self.fs)
         #ft=fft.rfft(x)
@@ -134,19 +136,34 @@ class MainWindow(QtWidgets.QMainWindow):
         #k=self.f*N/self.fs
         w=np.array([np.exp(-2*np.pi*1j/N*k*n) for n in range(N)])
         Xk=2*np.dot(x,w)/N
+        #print(Xk)
+        return Xk
 
-        #print (ft.shape)
-        #print(freq[k])
-        #Xk=2*ft[k]/N
+    def updateProgress(self, data):
+        #print(data.shape)
+        x=data[:,0]
+        x = x[~np.isnan(x)]
+        y=data[:,1]
+        y = y[~np.isnan(y)]
+        #print(x.shape)
+        #print(y.shape)
+        #pylab.plot(y)
+        #pylab.show()
+        X=self.detect(x)
+        Y=self.detect(y)
+        Mag=abs(X)
+        Ph=np.angle(X/Y)
+        Xk=Mag*np.exp(1j*Ph)
+        print(Ph)
         self.Xk.append(Xk)
         self.sc.axes.cla()
-        self.sc.axes.plot(np.abs(self.Xk))
-        self.sc.axes.plot(np.angle(self.Xk))
+        self.sc.axes.plot(np.real(self.Xk))
+        self.sc.axes.plot(np.imag(self.Xk))
         #self.sc.axes.plot(np.abs(self.Xk))
         #self.sc.axes.plot(np.angle(self.Xk))
         self.sc.draw()
         n=len(self.Xk)
-        np.save(str(n)+".npy", data)
+        #np.save(str(n)+".npy", data)
 
 app = QtWidgets.QApplication(sys.argv)
 w = MainWindow()
