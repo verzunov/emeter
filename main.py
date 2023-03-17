@@ -1,6 +1,7 @@
 import sys
 import matplotlib
 import numpy as np
+import scipy.stats as st
 from lcard.python import e502
 import time
 matplotlib.use('Qt5Agg')
@@ -9,6 +10,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import  pyqtSignal as Signal, pyqtSlot as Slot
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+import pandas as pd
+
 
 
 class MplCanvas(FigureCanvasQTAgg):
@@ -61,9 +64,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.dev.set_sync_start_mode("syn1_rise")
         self.dev.configure_device()
         self.dev.enable_streams()
-        self.Xk=[]
-        self.avg=[]
-
+        self.data=pd.DataFrame(columns=["Real","Imag" "Real std", "Imag std"])
         #self.sc.axes.plot([0,1,2,3,4], [10,1,20,3,40])
         layout = QtWidgets.QVBoxLayout()
         self.toolBar=QtWidgets.QToolBar()
@@ -137,17 +138,24 @@ class MainWindow(QtWidgets.QMainWindow):
         Xk=2*np.dot(x,w)/N
         return Xk
 
+    def plot(self, plt, data,std):
+        plt.cla()
+        ci = 1.96 * np.array(std)/np.sqrt(len(data))
+        df = pd.DataFrame({"data":data, "error":ci})
+        ma=df["data"].rolling(window=3).mean()        
+        plt.errorbar(np.arange(len(data)),data,yerr=ci,marker='o',linestyle = 'None',markersize =1)
+        plt.plot(ma)
+        plt.grid()
+        #plt.draw()  
+        
     def updateProgress(self, data):
         ft=[self.ft(sample[0]) for sample in data]
         Xk_avg=np.average(ft)
-        print (np.abs(Xk_avg))
-        print(np.angle(Xk_avg))
-        self.Xk.append(Xk_avg)
-        self.sc.axes.cla()
-        self.sc.axes.plot(np.real(self.Xk))
-        self.sc.axes.plot(np.imag(self.Xk))
-        #self.sc.axes.plot(np.abs(self.Xk))
-        #self.sc.axes.plot(np.angle(self.Xk))
+        Xk_std_r=np.real(np.std(np.real(ft)))
+        Xk_std_i=np.real(np.std(np.imag(ft)))
+        self.data=self.data.append({"Real":np.real(Xk_avg),"Imag":np.imag(Xk_avg), "Real std":Xk_std_r, "Imag std":Xk_std_i},ignore_index = True)
+
+        self.plot(self.sc.axes, np.real(self.data["Real"]), np.real(self.data["Real std"]))
         self.sc.draw()
         #self.running=True
         #self.work_requested.emit({"dev":self.dev, "t":self.t, "running":self})
