@@ -3,15 +3,13 @@ import matplotlib
 import numpy as np
 from lcard.python import e502
 import time
-import math
-import pylab
 matplotlib.use('Qt5Agg')
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import  pyqtSignal as Signal, pyqtSlot as Slot
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
-from numpy import fft
+
 
 class MplCanvas(FigureCanvasQTAgg):
 
@@ -21,8 +19,9 @@ class MplCanvas(FigureCanvasQTAgg):
         super(MplCanvas, self).__init__(fig)
 
 class Worker(QtCore.QObject):
-    progress = Signal(np.ndarray)
+    progress = Signal(list)
     work=True
+    buf=[]
     @Slot(dict)
     def do_work(self, param):
         dev=param["dev"]
@@ -33,9 +32,12 @@ class Worker(QtCore.QObject):
             dev.recive(t)
             dev.streams_stop()
             data, _=dev.get_data()
-            self.progress.emit(data)
-            time.sleep(1)
-            #break
+            self.buf.append([data])
+            if len(self.buf)==10:
+                self.progress.emit(self.buf)
+                self.buf.clear()
+                time.sleep(0.5)
+
     @Slot()
     def stop(self,param):
         self.work=False
@@ -48,18 +50,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.fs=1e6
-        self.f=24696
+      
+        self.f=24716
+        self.fs=2e6
         self.t=0.01 
         self.dev=e502.E502()
         self.dev.connect_byUsb()
-        self.dev.configure_channels(channels=[1, 2], modes=['comm','comm'],ranges=[2, 2])
+        self.dev.configure_channels(channels=[1], modes=['comm'],ranges=[2])
         self.dev.set_adc_freq(self.fs)
-        #self.dev.set_sync_start_mode("syn1_rise")
+        self.dev.set_sync_start_mode("syn1_rise")
         self.dev.configure_device()
         self.dev.enable_streams()
         self.Xk=[]
-        self.fs=self.fs/2
+        self.avg=[]
 
         #self.sc.axes.plot([0,1,2,3,4], [10,1,20,3,40])
         layout = QtWidgets.QVBoxLayout()
@@ -125,45 +128,31 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.worker_thread.quit()
         #self.worker_thread.wait()
 
-    def detect(self, data):
+    def ft(self, data):
         N=len(data)
-        x=data
-        #print (x)
+        #print(data)
+        x=data.reshape((N,))
         k=self.f*N/self.fs
-        #freq = np.fft.fftfreq(N, d=1/self.fs)
-        #ft=fft.rfft(x)
-        #k=np.argmax(np.abs(ft[:N//2]))
-        #k=self.f*N/self.fs
         w=np.array([np.exp(-2*np.pi*1j/N*k*n) for n in range(N)])
         Xk=2*np.dot(x,w)/N
-        #print(Xk)
         return Xk
 
     def updateProgress(self, data):
-        #print(data.shape)
-        x=data[:,0]
-        x = x[~np.isnan(x)]
-        y=data[:,1]
-        y = y[~np.isnan(y)]
-        #print(x.shape)
-        #print(y.shape)
-        #pylab.plot(y)
-        #pylab.show()
-        X=self.detect(x)
-        Y=self.detect(y)
-        Mag=abs(X)
-        Ph=np.angle(X/Y)
-        Xk=Mag*np.exp(1j*Ph)
-        print(Ph)
-        self.Xk.append(Xk)
+        ft=[self.ft(sample[0]) for sample in data]
+        Xk_avg=np.average(ft)
+        print (np.abs(Xk_avg))
+        print(np.angle(Xk_avg))
+        self.Xk.append(Xk_avg)
         self.sc.axes.cla()
         self.sc.axes.plot(np.real(self.Xk))
         self.sc.axes.plot(np.imag(self.Xk))
         #self.sc.axes.plot(np.abs(self.Xk))
         #self.sc.axes.plot(np.angle(self.Xk))
         self.sc.draw()
-        n=len(self.Xk)
+        #self.running=True
+        #self.work_requested.emit({"dev":self.dev, "t":self.t, "running":self})
         #np.save(str(n)+".npy", data)
+
 
 app = QtWidgets.QApplication(sys.argv)
 w = MainWindow()
