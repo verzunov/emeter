@@ -2,24 +2,18 @@ import sys
 import matplotlib
 import numpy as np
 import scipy.stats as st
-from lcard.python import e502
+#from lcard.python import e502
+from emul import e502
 import time
 matplotlib.use('Qt5Agg')
-
+import pylab as plb
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import  pyqtSignal as Signal, pyqtSlot as Slot
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 import pandas as pd
-
-
-
-class MplCanvas(FigureCanvasQTAgg):
-
-    def __init__(self, parent=None, width=6, height=4, dpi=100):
-        fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
-        super(MplCanvas, self).__init__(fig)
+from canvases.signal_canvas import SignalCanvas
+import pylab
 
 class Worker(QtCore.QObject):
     progress = Signal(list)
@@ -39,12 +33,12 @@ class Worker(QtCore.QObject):
             if len(self.buf)==10:
                 self.progress.emit(self.buf)
                 self.buf.clear()
-                time.sleep(0.5)
+                time.sleep(1)
 
     @Slot()
     def stop(self,param):
         self.work=False
-        print("stop")
+
         
 class MainWindow(QtWidgets.QMainWindow):
     work_requested = Signal(dict)
@@ -56,7 +50,7 @@ class MainWindow(QtWidgets.QMainWindow):
       
         self.f=24716
         self.fs=2e6
-        self.t=0.01 
+        self.t=0.03 
         self.dev=e502.E502()
         self.dev.connect_byUsb()
         self.dev.configure_channels(channels=[1], modes=['comm'],ranges=[2])
@@ -78,7 +72,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.toolBar.addWidget(self.stopButton)
         self.stopButton.clicked.connect(self.stopRecive)
         # Create toolbar, passing canvas as first parament, parent (self, the MainWindow) as second.
-        self.sc = MplCanvas(self, width=5, height=4, dpi=100)
+        self.sc = SignalCanvas(self, width=5, height=4, dpi=100)
         toolbar = NavigationToolbar(self.sc, self)
 
         
@@ -131,10 +125,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def ft(self, data):
         N=len(data)
-        #print(data)
         x=data.reshape((N,))
         k=self.f*N/self.fs
-        w=np.array([np.exp(-2*np.pi*1j/N*k*n) for n in range(N)])
+        n=np.arange(N)
+        w=np.exp(-2*np.pi*1j/N*k*n)
         Xk=2*np.dot(x,w)/N
         return Xk
 
@@ -154,12 +148,10 @@ class MainWindow(QtWidgets.QMainWindow):
         Xk_std_r=np.real(np.std(np.real(ft)))
         Xk_std_i=np.real(np.std(np.imag(ft)))
         self.data=self.data.append({"Real":np.real(Xk_avg),"Imag":np.imag(Xk_avg), "Real std":Xk_std_r, "Imag std":Xk_std_i},ignore_index = True)
-
-        self.plot(self.sc.axes, np.real(self.data["Real"]), np.real(self.data["Real std"]))
+        self.plot(self.sc.ax_real, np.real(self.data["Real"]), np.real(self.data["Real std"]))
+        self.plot(self.sc.ax_imaq, np.real(self.data["Imag"]), np.real(self.data["Imag std"]))
         self.sc.draw()
-        #self.running=True
-        #self.work_requested.emit({"dev":self.dev, "t":self.t, "running":self})
-        #np.save(str(n)+".npy", data)
+
 
 
 app = QtWidgets.QApplication(sys.argv)
