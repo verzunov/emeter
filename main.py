@@ -151,7 +151,7 @@ class MainWindow(QtWidgets.QMainWindow):
         freqs=np.fft.fftfreq(N,1/self.fs)
         print(freqs)
 
-        self.fc.spectr(freqs[1:N//2], fft[1:N//2])
+        self.fc.spectr(freqs[1:N//8], fft[1:N//8])
 
 
 

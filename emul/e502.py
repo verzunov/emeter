@@ -23,7 +23,7 @@ class E502:
     def recive(self,t):
         time.sleep(t)
         N=int(self.fs*t)+np.random.randint(-2,2)
-        f=self.f+np.random.uniform(-5,5)
+        f=self.f+np.random.uniform(-2,2)
         k=f*N/self.fs
         self.w=np.array([np.cos(2*np.pi/N*k*n) for n in range(N)])
         return N
