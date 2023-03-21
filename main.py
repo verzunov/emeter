@@ -12,8 +12,9 @@ from PyQt5.QtCore import  pyqtSignal as Signal, pyqtSlot as Slot
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 import pandas as pd
-from canvases.signal_canvas import SignalCanvas
+from canvases.signal_canvas import SignalCanvas, FFTCanvas
 import pylab
+import gofft
 
 class Worker(QtCore.QObject):
     progress = Signal(list)
@@ -49,8 +50,8 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
       
         self.f=24716
-        self.fs=2e6
-        self.t=0.03 
+        self.fs=2000000
+        self.t=0.01 
         self.dev=e502.E502()
         self.dev.connect_byUsb()
         self.dev.configure_channels(channels=[1], modes=['comm'],ranges=[2])
@@ -74,23 +75,12 @@ class MainWindow(QtWidgets.QMainWindow):
         # Create toolbar, passing canvas as first parament, parent (self, the MainWindow) as second.
         self.sc = SignalCanvas(self, width=5, height=4, dpi=100)
         toolbar = NavigationToolbar(self.sc, self)
-
-        
-        #quickbar = NavigationToolbar(self.sc, self)
-        #self.startButton = QtWidgets.QPushButton("Start", self)
-        #quickbar.addWidget(self.startButton)
-        #self.startButton.clicked.connect(self.startRecive)
-
-        #self.stopButton = QtWidgets.QPushButton("Stop", self)
-        #quickbar.addWidget(self.stopButton)
-        #self.startButton.clicked.connect(self.stopRecive)
-        #self.stopButton.setEnabled(False)
         layout.addWidget(toolbar)
-
-        
- 
         layout.addWidget(self.sc)
-
+        self.fc=FFTCanvas(self,width=10, height=5, dpi=100)
+        toolbar = NavigationToolbar(self.fc, self)
+        layout.addWidget(toolbar)
+        layout.addWidget(self.fc)
         # Create a placeholder widget to hold our toolbar and canvas.
         widget = QtWidgets.QWidget()
         widget.setLayout(layout)
@@ -130,6 +120,8 @@ class MainWindow(QtWidgets.QMainWindow):
         n=np.arange(N)
         w=np.exp(-2*np.pi*1j/N*k*n)
         Xk=2*np.dot(x,w)/N
+        print(np.abs(Xk))
+        print(np.angle(Xk))
         return Xk
 
     def plot(self, plt, data,std):
@@ -151,6 +143,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.plot(self.sc.ax_real, np.real(self.data["Real"]), np.real(self.data["Real std"]))
         self.plot(self.sc.ax_imaq, np.real(self.data["Imag"]), np.real(self.data["Imag std"]))
         self.sc.draw()
+        samples=[sample[0] for sample in data]
+        samples=np.concatenate(samples)
+        N=samples.shape[0]
+        fft=np.fft.fft(samples)/N*2
+
+        freqs=np.fft.fftfreq(N,1/self.fs)
+        print(freqs)
+
+        self.fc.spectr(freqs[1:N//2], fft[1:N//2])
 
 
 
