@@ -120,8 +120,8 @@ class MainWindow(QtWidgets.QMainWindow):
         n=np.arange(N)
         w=np.exp(-2*np.pi*1j/N*k*n)
         Xk=2*np.dot(x,w)/N
-        print(np.abs(Xk))
-        print(np.angle(Xk))
+        #print(np.abs(Xk))
+        #print(np.angle(Xk))
         return Xk
 
     def plot(self, plt, data,std):
@@ -139,9 +139,19 @@ class MainWindow(QtWidgets.QMainWindow):
         Xk_avg=np.average(ft)
         Xk_std_r=np.real(np.std(np.real(ft)))
         Xk_std_i=np.real(np.std(np.imag(ft)))
-        self.data=self.data.append({"Real":np.real(Xk_avg),"Imag":np.imag(Xk_avg), "Real std":Xk_std_r, "Imag std":Xk_std_i},ignore_index = True)
+        Xk_std_m=np.real(np.std(np.abs(ft)))
+        Xk_std_p=np.real(np.std(np.angle(ft)))
+        self.data=self.data.append({"Real":np.real(Xk_avg),"Imag":np.imag(Xk_avg),"Mag":np.abs(Xk_avg), "Angle":np.angle(Xk_avg),
+                                     "Real std":Xk_std_r, "Imag std":Xk_std_i, "Mag std":Xk_std_m, "Angle std":Xk_std_p},ignore_index = True)
         self.plot(self.sc.ax_real, np.real(self.data["Real"]), np.real(self.data["Real std"]))
-        self.plot(self.sc.ax_imaq, np.real(self.data["Imag"]), np.real(self.data["Imag std"]))
+        self.plot(self.sc.ax_imag, np.real(self.data["Imag"]), np.real(self.data["Imag std"]))
+        self.plot(self.sc.ax_mag, np.real(self.data["Mag"]), np.real(self.data["Mag std"]))
+        self.plot(self.sc.ax_angle, np.real(self.data["Angle"]), np.real(self.data["Angle std"]))
+
+        self.sc.ax_real.set_title("Real")
+        self.sc.ax_imag.set_title("Imaginary")
+        self.sc.ax_mag.set_title("Magnitude")
+        self.sc.ax_angle.set_title("Phase")
         self.sc.draw()
         samples=[sample[0] for sample in data]
         samples=np.concatenate(samples)
