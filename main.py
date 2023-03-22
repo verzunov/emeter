@@ -72,6 +72,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.stopButton.setText("Stop")
         self.toolBar.addWidget(self.stopButton)
         self.stopButton.clicked.connect(self.stopRecive)
+        self.clearButton=QtWidgets.QToolButton()
+        self.clearButton.setText("Clear")
+        self.toolBar.addWidget(self.clearButton)
+        self.clearButton.clicked.connect(self.clearRecive)
+
         # Create toolbar, passing canvas as first parament, parent (self, the MainWindow) as second.
         self.sc = SignalCanvas(self, width=5, height=4, dpi=100)
         toolbar = NavigationToolbar(self.sc, self)
@@ -104,10 +109,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.work_requested.emit({"dev":self.dev, "t":self.t, "running":self})
         self.startButton.setEnabled(False)
         self.stopButton.setEnabled(True)
+        #self.clearButton.setEnabled(False)
 
     def stopRecive(self):
         self.stopButton.setEnabled(False)
         self.startButton.setEnabled(True)
+        #self.clearButton.setEnabled(True)
         self.running=False
         #self.stop_requested.emit(0)
         #self.worker_thread.quit()
@@ -164,6 +171,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.fc.spectr(samples, self.fs)
 
+    def clearRecive(self):
+        self.data.drop(self.data.index, inplace=True)
 
 
 app = QtWidgets.QApplication(sys.argv)

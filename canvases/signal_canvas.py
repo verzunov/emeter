@@ -27,5 +27,6 @@ class FFTCanvas(FigureCanvasQTAgg):
     def spectr(self, x, fs):
         self.freq.cla()
         self.freq.magnitude_spectrum(x,Fs=fs)
+        self.freq.set_xlim(left=0,right=50000)
         self.draw()
         
