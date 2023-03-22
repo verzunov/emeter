@@ -2,8 +2,8 @@ import sys
 import matplotlib
 import numpy as np
 import scipy.stats as st
-#from lcard.python import e502
-from emul import e502
+from lcard.python import e502
+#from emul import e502
 import time
 matplotlib.use('Qt5Agg')
 import pylab as plb
@@ -14,7 +14,7 @@ from matplotlib.figure import Figure
 import pandas as pd
 from canvases.signal_canvas import SignalCanvas, FFTCanvas
 import pylab
-import gofft
+#import gofft
 
 class Worker(QtCore.QObject):
     progress = Signal(list)
@@ -146,12 +146,13 @@ class MainWindow(QtWidgets.QMainWindow):
         samples=[sample[0] for sample in data]
         samples=np.concatenate(samples)
         N=samples.shape[0]
-        fft=np.fft.fft(samples)/N*2
+        samples=np.reshape(samples,(N,))
+        #fft=np.log10(np.fft.fft(samples, norm='ortho')/N*2)
 
-        freqs=np.fft.fftfreq(N,1/self.fs)
-        print(freqs)
+        #freqs=np.fft.fftfreq(N,1/self.fs)
+        #print(freqs)
 
-        self.fc.spectr(freqs[1:N//8], fft[1:N//8])
+        self.fc.spectr(samples, self.fs)
 
 
 

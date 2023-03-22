@@ -17,8 +17,8 @@ class FFTCanvas(FigureCanvasQTAgg):
         self.freq = fig.add_subplot(111)
         super(FFTCanvas, self).__init__(fig)
     
-    def spectr(self, freqs, fft):
+    def spectr(self, x, fs):
         self.freq.cla()
-        self.freq.plot(freqs,np.abs(fft))
+        self.freq.magnitude_spectrum(x,Fs=fs)
         self.draw()
         
