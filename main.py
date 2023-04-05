@@ -26,15 +26,20 @@ class Worker(QtCore.QObject):
         t=param["t"]
         sender = param["running"]
         while (sender.running):
+            dev.send_data(data1=self.dac1, data2=self.dac2)
             dev.streams_start()
+
             dev.recive(t)
             dev.streams_stop()
             data, _=dev.get_data()
+            #sender.running=False
+            #plb.plot(data)
+            #plb.show()
             self.buf.append([data])
-            if len(self.buf)==10:
+            if len(self.buf)==3:
                 self.progress.emit(self.buf)
                 self.buf.clear()
-                time.sleep(1)
+                time.sleep(1.0)
 
     @Slot()
     def stop(self,param):
@@ -49,16 +54,25 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
       
-        self.f=24716
-        self.fs=2000000
-        self.t=0.01 
+        self.f=24800
+        self.fs=1000000
+        self.dacfs=1000000
+        self.t=0.05 
         self.dev=e502.E502()
         self.dev.connect_byUsb()
         self.dev.configure_channels(channels=[1], modes=['comm'],ranges=[2])
         self.dev.set_adc_freq(self.fs)
-        self.dev.set_sync_start_mode("syn1_rise")
+        self.dev.set_out_freq(self.dacfs)
+        #self.dev.set_sync_start_mode("syn1_rise")
         self.dev.configure_device()
-        self.dev.enable_streams()
+        self.dev.enable_streams(stream_adc=True,stream_dac1=True,stream_dac2=True)
+        dt=1/self.dev._out_freq
+        t=np.arange(0,self.t,dt,np.float)
+        omega=2*np.pi*self.f
+        a=1.0
+        data1=a*np.cos(omega*t)
+        data2=a*np.cos(omega*t+np.pi)
+        #self.dev.send_data(data1=data1,data2=data2)
         self.data=pd.DataFrame(columns=["Real","Imag" "Real std", "Imag std"])
         #self.sc.axes.plot([0,1,2,3,4], [10,1,20,3,40])
         layout = QtWidgets.QVBoxLayout()
@@ -94,6 +108,8 @@ class MainWindow(QtWidgets.QMainWindow):
   
         
         self.worker = Worker()
+        self.worker.dac1=data1
+        self.worker.dac2=data2
         self.worker_thread = QtCore.QThread()
         self.worker.progress.connect(self.updateProgress)
 
@@ -122,6 +138,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def ft(self, data):
         N=len(data)
+        print(N)
         x=data.reshape((N,))
         k=self.f*N/self.fs
         n=np.arange(N)
