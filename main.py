@@ -69,7 +69,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dt=1/self.dev._out_freq
         t=np.arange(0,self.t,dt,np.float)
         omega=2*np.pi*self.f
-        a=1.0
+        a=5.0
         data1=a*np.cos(omega*t)
         data2=a*np.cos(omega*t+np.pi)
         #self.dev.send_data(data1=data1,data2=data2)
