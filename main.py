@@ -54,13 +54,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
       
-        self.f=24800
+        self.f=25000
         self.fs=1000000
         self.dacfs=1000000
-        self.t=0.05 
+        self.t=0.1 
         self.dev=e502.E502()
         self.dev.connect_byUsb()
-        self.dev.configure_channels(channels=[1], modes=['comm'],ranges=[2])
+        self.dev.configure_channels(channels=[1], modes=['comm'],ranges=[1])
         self.dev.set_adc_freq(self.fs)
         self.dev.set_out_freq(self.dacfs)
         #self.dev.set_sync_start_mode("syn1_rise")
