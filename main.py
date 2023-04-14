@@ -142,7 +142,7 @@ class MainWindow(QtWidgets.QMainWindow):
         x=data.reshape((N,))
         k=self.f*N/self.fs
         n=np.arange(N)
-        w=np.exp(-2*np.pi*1j/N*k*n+np.pi/2)
+        w=np.exp(-2*np.pi*1j/N*k*n)
         Xk=2*np.dot(x,w)/N
         #print(np.abs(Xk))
         #print(np.angle(Xk))
