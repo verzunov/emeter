@@ -57,7 +57,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.f=25000
         self.fs=1000000
         self.dacfs=1000000
-        self.t=0.1 
+        self.t=0.2 
         self.dev=e502.E502()
         self.dev.connect_byUsb()
         self.dev.configure_channels(channels=[1], modes=['comm'],ranges=[1])
