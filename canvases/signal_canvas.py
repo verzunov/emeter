@@ -7,13 +7,13 @@ class SignalCanvas(FigureCanvasQTAgg):
     def __init__(self, parent=None, width=6, height=4, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.ax_real = fig.add_subplot(221)
-        self.ax_real.set_title("Real")
+        self.ax_real.set_title("Проводимость")
         self.ax_imag = fig.add_subplot(222)
-        self.ax_imag.set_title("Imaginary")
+        self.ax_imag.set_title("Диэлектрическая проницаемость")
         self.ax_mag = fig.add_subplot(223)
-        self.ax_mag.set_title("Magnitude")
+        self.ax_mag.set_title("Амплитуда")
         self.ax_angle= fig.add_subplot(224)
-        self.ax_angle.set_title("Phase")
+        self.ax_angle.set_title("Тангенс угла потерь")
         super(SignalCanvas, self).__init__(fig)
         self.figure.tight_layout(pad=1.0)
 

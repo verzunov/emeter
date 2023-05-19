@@ -59,6 +59,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.dacfs=1000000
         self.t=0.2 
         self.bp=np.pi/2-1.6984
+        self.bi=-0.118984
+        self.ki=2/0.268641
         self.dev=e502.E502()
         self.dev.connect_byUsb()
         self.dev.configure_channels(channels=[1], modes=['comm'],ranges=[1])
@@ -170,18 +172,22 @@ class MainWindow(QtWidgets.QMainWindow):
         A=np.abs(Xk_avg)
         p=np.angle(Xk_avg)
         Xk_avg=A*np.exp(1j*(p+self.bp))
+        r=np.real(Xk_avg)
+        im=np.imag(Xk_avg)
+        Xk_avg=r+1j*(im+self.bi)*self.ki
+        
 
-        self.data=self.data.append({"Real":np.real(Xk_avg),"Imag":np.imag(Xk_avg),"Mag":np.abs(Xk_avg), "Angle":np.angle(Xk_avg),
+        self.data=self.data.append({"Real":np.real(Xk_avg),"Imag":np.imag(Xk_avg),"Mag":np.abs(Xk_avg), "Angle":np.tan(np.pi/2-np.angle(Xk_avg)),
                                      "Real std":Xk_std_r, "Imag std":Xk_std_i, "Mag std":Xk_std_m, "Angle std":Xk_std_p},ignore_index = True)
         self.plot(self.sc.ax_real, np.real(self.data["Real"]), np.real(self.data["Real std"]))
         self.plot(self.sc.ax_imag, np.real(self.data["Imag"]), np.real(self.data["Imag std"]))
         self.plot(self.sc.ax_mag, np.real(self.data["Mag"]), np.real(self.data["Mag std"]))
         self.plot(self.sc.ax_angle, np.real(self.data["Angle"]), np.real(self.data["Angle std"]))
 
-        self.sc.ax_real.set_title("Real")
-        self.sc.ax_imag.set_title("Imaginary")
-        self.sc.ax_mag.set_title("Magnitude")
-        self.sc.ax_angle.set_title("Phase")
+        self.sc.ax_real.set_title("Проводимость")
+        self.sc.ax_imag.set_title("Диэлектрическая проницаемость")
+        self.sc.ax_mag.set_title("Амплитуда")
+        self.sc.ax_angle.set_title("Тангенс угла потерь")
         self.sc.draw()
         samples=[sample[0] for sample in data]
         samples=np.concatenate(samples)
