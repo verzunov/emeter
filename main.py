@@ -14,7 +14,7 @@ from matplotlib.figure import Figure
 import pandas as pd
 from canvases.signal_canvas import SignalCanvas, FFTCanvas
 import pylab
-#import gofft
+
 
 class Worker(QtCore.QObject):
     progress = Signal(list)
@@ -58,6 +58,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fs=1000000
         self.dacfs=1000000
         self.t=0.2 
+        self.bp=np.pi/2-1.6984
         self.dev=e502.E502()
         self.dev.connect_byUsb()
         self.dev.configure_channels(channels=[1], modes=['comm'],ranges=[1])
@@ -165,6 +166,11 @@ class MainWindow(QtWidgets.QMainWindow):
         Xk_std_i=np.real(np.std(np.imag(ft)))
         Xk_std_m=np.real(np.std(np.abs(ft)))
         Xk_std_p=np.real(np.std(np.angle(ft)))
+        #Калибровка
+        A=np.abs(Xk_avg)
+        p=np.angle(Xk_avg)
+        Xk_avg=A*np.exp(1j*(p+self.bp))
+
         self.data=self.data.append({"Real":np.real(Xk_avg),"Imag":np.imag(Xk_avg),"Mag":np.abs(Xk_avg), "Angle":np.angle(Xk_avg),
                                      "Real std":Xk_std_r, "Imag std":Xk_std_i, "Mag std":Xk_std_m, "Angle std":Xk_std_p},ignore_index = True)
         self.plot(self.sc.ax_real, np.real(self.data["Real"]), np.real(self.data["Real std"]))
